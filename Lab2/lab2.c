@@ -25,7 +25,7 @@ int main() {
     char path[MAX_COMMAND_LENGTH];
 
     while (1) {
-        printf("miniShell>> ");
+        printf("Shell>> ");
         //Reading the user's input command
         //reads the user's input into the buffer command with fgets() 
         //If fgets() returns NULL, there is an error reading the user's input
