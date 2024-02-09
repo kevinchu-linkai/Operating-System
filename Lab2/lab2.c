@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define MAX_COMMAND_LENGTH 1024
+#define MAX_COMMAND_LENGTH 256
 #define ARGV_MAX 20
 //MAX_COMMAND_LENGTH: the maximum length of the command
 //ARGV_MAX: the maximum number of the input of the argument vector
