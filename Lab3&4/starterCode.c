@@ -4,6 +4,7 @@
 #include "string.h"
 #include "sys/wait.h"
 #include "unistd.h"
+#include <ctype.h> 
 
 #define LINE_SIZE 1024      // max can be 1024 bytes
 #define BUFFER_SIZE 128
@@ -63,8 +64,34 @@ output:
     }
 */
 char **splitLine(char *line, int *numOfCommands){
-    // TO-DO
-    return NULL;
+    int bufsize = BUFFER_SIZE;
+    int position = 0;
+    char **tokens = malloc(bufsize * sizeof(char*));
+    char *token;
+
+    if (!tokens) {
+        fprintf(stderr, "splitLine: allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+
+    token = strtok(line, "|");
+    while (token != NULL) {
+        tokens[position++] = token;
+
+        if (position >= bufsize) {
+            bufsize += BUFFER_SIZE;
+            tokens = realloc(tokens, bufsize * sizeof(char*));
+            if (!tokens) {
+                fprintf(stderr, "splitLine: allocation error\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        token = strtok(NULL, "|");
+    }
+    tokens[position] = NULL;
+    *numOfCommands = position;
+    return tokens;
 }
 
 // obtains a single string representing a command
@@ -100,10 +127,65 @@ output:
         "Hello world"
     }
 */
-char **parseCommand(char *command, int *numOfWords){
-   // TO-DO
-   return NULL;
+char **parseCommand(char *command, int *numOfWords) {
+    int bufsize = BUFFER_SIZE;
+    int position = 0;
+    char **tokens = malloc(bufsize * sizeof(char*));
+    char *token;
+    char *cursor;
+    int inSingleQuote = 0, inDoubleQuote = 0;
+
+    if (!tokens) {
+        fprintf(stderr, "parseCommand: allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+
+    cursor = command;
+    while (*cursor) {
+        // Skip leading whitespace
+        while (*cursor && isspace((unsigned char)*cursor)) cursor++;
+
+        if (!*cursor) break; // Break if end of string
+
+        // Start of a token
+        token = cursor;
+
+        while (*cursor) {
+            if (*cursor == '\'' && !inDoubleQuote) {
+                inSingleQuote = !inSingleQuote;
+                memmove(cursor, cursor + 1, strlen(cursor)); // Remove quote from command
+            } else if (*cursor == '\"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+                memmove(cursor, cursor + 1, strlen(cursor)); // Remove quote from command
+            } else if (isspace((unsigned char)*cursor) && !inSingleQuote && !inDoubleQuote) {
+                break; // End of token if not within quotes
+            } else {
+                cursor++;
+            }
+        }
+
+        if (position >= bufsize) {
+            bufsize += BUFFER_SIZE;
+            tokens = realloc(tokens, bufsize * sizeof(char*));
+            if (!tokens) {
+                fprintf(stderr, "parseCommand: allocation error\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // Cut the token and move to the next
+        tokens[position++] = token;
+        if (*cursor) {
+            *cursor = '\0'; // Null-terminate the token
+            cursor++;
+        }
+    }
+
+    tokens[position] = NULL; // Null-terminate the list of tokens
+    *numOfWords = position;
+    return tokens;
 }
+
 
 
 // obtains the tokens and number of tokens associated with a single command
@@ -112,8 +194,45 @@ char **parseCommand(char *command, int *numOfWords){
 // and won't return. If not, it will return 1. This function is also 
 // responsible for handling redirects and the handling of background processes
 int shellExecute(char *tokens[], int numOfTokens, int inFD, int outFD){
-    // TO-DO
-    return 0;
+    pid_t pid, wpid;
+    int status, background = 0;
+
+    // Check for background process
+    if (strcmp(tokens[numOfTokens - 1], "&") == 0) {
+        background = 1;
+        tokens[numOfTokens - 1] = NULL;
+    }
+
+    pid = fork();
+    if (pid == 0) {
+        // Child process
+        if (inFD != 0) {
+            dup2(inFD, STDIN_FILENO);
+            close(inFD);
+        }
+
+        if (outFD != 1) {
+            dup2(outFD, STDOUT_FILENO);
+            close(outFD);
+        }
+
+        if (execvp(tokens[0], tokens) == -1) {
+            perror("shellExecute");
+        }
+        exit(EXIT_FAILURE);
+    } else if (pid < 0) {
+        // Error forking
+        perror("shellExecute");
+    } else {
+        // Parent process
+        if (!background) {
+            do {
+                wpid = waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        }
+    }
+
+    return 1;
 }
 
 int main(){
@@ -181,9 +300,38 @@ int main(){
         // then we have to construct and allocate the pipes
         // such that we can establish interprocess communication (IPC) 
         else if(numOfCommands > 1){
-            // TO-DO: implement the piping and execution logic
-            printf("Not yet implemented\n");
-            break;
+            int inFD = 0; // Initially, input is from stdin
+            for (int i = 0; i < numOfCommands; i++) {
+                int fd[2];
+                // Create a pipe for all but the last command
+                if (i < numOfCommands - 1) {
+                    if (pipe(fd) != 0) {
+                        perror("Pipe failed");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+
+                char **tokens;
+                int numOfTokens;
+                tokens = parseCommand(commandList[i], &numOfTokens);
+
+                if (i == numOfCommands - 1) { // For the last command, output to stdout
+                    shellExecute(tokens, numOfTokens, inFD, STDOUT_FILENO);
+                } else {
+                    // For other commands, output to the pipe
+                    shellExecute(tokens, numOfTokens, inFD, fd[1]);
+                    close(fd[1]); // Close the write-end of the pipe after use
+                }
+
+                // The next command should read from the current pipe
+                if (inFD != STDIN_FILENO) {
+                    close(inFD); // Close the previous read-end of the pipe
+                }
+                inFD = fd[0]; // For the next command, read from the current pipe
+
+                // Clean up
+                free(tokens);
+            }
         }
 
         // if you used dynamic mmeory allocation (which I highly recommend in this
