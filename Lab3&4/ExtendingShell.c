@@ -63,36 +63,44 @@ output:
         "cmd3 arg1 arg2 &"
     }
 */
-char **splitLine(char *line, int *numOfCommands){
-    int bufsize = BUFFER_SIZE;
-    int position = 0;
-    char **tokens = malloc(bufsize * sizeof(char*));
-    char *token;
+// Splits a command line into separate commands based on the pipe '|' character
+// and returns an array of commands.
+char **splitLine(char *line, int *numOfCommands) {
+    int bufsize = BUFFER_SIZE; 
+    int position = 0; 
+    char **tokens = malloc(bufsize * sizeof(char*)); // Allocate memory for the tokens array
+    char *token; // Pointer to store each token found by strtok
 
+    // Check if memory allocation for tokens array was successful
     if (!tokens) {
         fprintf(stderr, "splitLine: allocation error\n");
         exit(EXIT_FAILURE);
     }
 
+    // Use strtok to find the first token, split by the pipe character
     token = strtok(line, "|");
-    while (token != NULL) {
-        tokens[position++] = token;
+    while (token != NULL) { // Continue until no more tokens are found
+        tokens[position++] = token; // Assign the token to the current position in the array
 
+        // If we've reached the current buffer size, increase the buffer size
         if (position >= bufsize) {
-            bufsize += BUFFER_SIZE;
-            tokens = realloc(tokens, bufsize * sizeof(char*));
+            bufsize += BUFFER_SIZE; 
+            tokens = realloc(tokens, bufsize * sizeof(char*)); 
+            // Check if memory reallocation was successful
             if (!tokens) {
                 fprintf(stderr, "splitLine: allocation error\n");
                 exit(EXIT_FAILURE);
             }
         }
 
+        // Find the next token
         token = strtok(NULL, "|");
     }
-    tokens[position] = NULL;
-    *numOfCommands = position;
-    return tokens;
+    tokens[position] = NULL; 
+    *numOfCommands = position; 
+    return tokens; 
 }
+
 
 // obtains a single string representing a command
 // parses the words of the command into tokens and strips
@@ -127,64 +135,70 @@ output:
         "Hello world"
     }
 */
+// Parses a single command into tokens, taking into account quoted strings
+// and returns an array of tokens/words found in the command.
 char **parseCommand(char *command, int *numOfWords) {
-    int bufsize = BUFFER_SIZE;
-    int position = 0;
-    char **tokens = malloc(bufsize * sizeof(char*));
-    char *token;
-    char *cursor;
-    int inSingleQuote = 0, inDoubleQuote = 0;
+    int bufsize = BUFFER_SIZE; 
+    int position = 0; 
+    char **tokens = malloc(bufsize * sizeof(char*)); 
+    char *token; // Pointer to store the start of each token
+    char *cursor; // Pointer used to iterate through the command string
+    int inSingleQuote = 0, inDoubleQuote = 0; // Flags to track if inside quotes
 
+    // Check if memory allocation for tokens array was successful
     if (!tokens) {
         fprintf(stderr, "parseCommand: allocation error\n");
         exit(EXIT_FAILURE);
     }
 
-    cursor = command;
-    while (*cursor) {
-        // Skip leading whitespace
+    cursor = command; // Initialize cursor to the start of the command
+    while (*cursor) { // Iterate through the command until the end of the string
+        // Skip any leading whitespace before a token
         while (*cursor && isspace((unsigned char)*cursor)) cursor++;
 
-        if (!*cursor) break; // Break if end of string
+        if (!*cursor) break; // If reached the end of the string, stop parsing
 
-        // Start of a token
+        // Mark the start of a token
         token = cursor;
 
+        // Iterate over the characters until the end of the token is found
         while (*cursor) {
-            if (*cursor == '\'' && !inDoubleQuote) {
-                inSingleQuote = !inSingleQuote;
-                memmove(cursor, cursor + 1, strlen(cursor)); // Remove quote from command
-            } else if (*cursor == '\"' && !inSingleQuote) {
-                inDoubleQuote = !inDoubleQuote;
-                memmove(cursor, cursor + 1, strlen(cursor)); // Remove quote from command
+            if (*cursor == '\'' && !inDoubleQuote) { // Handling single quotes
+                inSingleQuote = !inSingleQuote; // Toggle the inSingleQuote flag
+                memmove(cursor, cursor + 1, strlen(cursor)); // Remove the quote from the command
+            } else if (*cursor == '\"' && !inSingleQuote) { // Handling double quotes
+                inDoubleQuote = !inDoubleQuote; // Toggle the inDoubleQuote flag
+                memmove(cursor, cursor + 1, strlen(cursor)); // Remove the quote from the command
             } else if (isspace((unsigned char)*cursor) && !inSingleQuote && !inDoubleQuote) {
-                break; // End of token if not within quotes
+                break; // End of the token if whitespace is found outside quotes
             } else {
-                cursor++;
+                cursor++; // Move to the next character
             }
         }
 
+        // Check if the tokens array needs to be resized
         if (position >= bufsize) {
-            bufsize += BUFFER_SIZE;
-            tokens = realloc(tokens, bufsize * sizeof(char*));
+            bufsize += BUFFER_SIZE; 
+            tokens = realloc(tokens, bufsize * sizeof(char*)); 
             if (!tokens) {
                 fprintf(stderr, "parseCommand: allocation error\n");
                 exit(EXIT_FAILURE);
             }
         }
 
-        // Cut the token and move to the next
+        // Assign the token to the current position in the array and increment the position
         tokens[position++] = token;
         if (*cursor) {
             *cursor = '\0'; // Null-terminate the token
-            cursor++;
+            cursor++; // Move past the end of the current token
         }
     }
 
-    tokens[position] = NULL; // Null-terminate the list of tokens
-    *numOfWords = position;
-    return tokens;
+    tokens[position] = NULL; 
+    *numOfWords = position; 
+    return tokens; 
 }
+
 
 
 
@@ -193,47 +207,93 @@ char **parseCommand(char *command, int *numOfWords) {
 // will execute the function given, reading from inFD and writing to outFD
 // and won't return. If not, it will return 1. This function is also 
 // responsible for handling redirects and the handling of background processes
-int shellExecute(char *tokens[], int numOfTokens, int inFD, int outFD){
-    pid_t pid, wpid;
-    int status, background = 0;
+int shellExecute(char *tokens[], int numOfTokens, int inFD, int outFD) {
+    pid_t pid;
+    int status;
+    int background = 0;
+    int inputRedirected = 0, outputRedirected = 0;
 
-    // Check for background process
-    if (strcmp(tokens[numOfTokens - 1], "&") == 0) {
-        background = 1;
-        tokens[numOfTokens - 1] = NULL;
+    // Parse tokens for redirections and background flag
+    for (int i = 0; i < numOfTokens; i++) {
+        if (strcmp(tokens[i], "<") == 0) {
+            inputRedirected = 1;
+            inFD = open(tokens[i + 1], O_RDONLY);
+            if (inFD < 0) {
+                perror("Failed to open input file");
+                return -1;
+            }
+            tokens[i] = NULL; // Remove redirection from command
+            i++; // Skip filename
+        } else if (strcmp(tokens[i], ">") == 0) {
+            outputRedirected = 1;
+            char filepath[BUFFER_SIZE]; // Define a buffer to hold the filepath
+            sprintf(filepath, "./%s", tokens[i + 1]); // Prepend "./" to the filename
+            outFD = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);  
+            if (outFD < 0) {
+                perror("Failed to open output file");
+                return -1;
+            }
+            tokens[i] = NULL; // Remove redirection from command
+            i++; // Skip filename
+        } else if (strcmp(tokens[i], "&") == 0) {
+            background = 1;
+            tokens[i] = NULL; // Remove background symbol from command
+        }
     }
 
     pid = fork();
-    if (pid == 0) {
-        // Child process
-        if (inFD != 0) {
+    if (pid == 0) { // Child process
+        // Redirect input if necessary
+        if (inFD != STDIN_FILENO) {
             dup2(inFD, STDIN_FILENO);
             close(inFD);
         }
-
-        if (outFD != 1) {
+        // Redirect output if necessary
+        if (outFD != STDOUT_FILENO) {
             dup2(outFD, STDOUT_FILENO);
             close(outFD);
         }
 
-        if (execvp(tokens[0], tokens) == -1) {
-            perror("shellExecute");
+        // Close the read end of the pipe if it's not STDIN
+        if (inFD != 0) close(inFD);
+        // Close the write end of the pipe if it's not STDOUT
+        if (outFD != 1) close(outFD);
+
+        // Prepend /bin/ to the command if it doesn't already specify a path
+        if (tokens[0][0] != '/') {
+            char cmdpath[BUFFER_SIZE]; // Define a buffer to hold the filepath
+            sprintf(cmdpath, "/bin/%s", tokens[0]); // Prepend "./" to the filename
+            tokens[0] = cmdpath; // Point the first token to the full command path
         }
-        exit(EXIT_FAILURE);
+
+        if (execvp(tokens[0], tokens) == -1) {
+            perror("execvp error");
+            exit(EXIT_FAILURE);
+        }
     } else if (pid < 0) {
         // Error forking
-        perror("shellExecute");
+        perror("fork error");
+        return -1;
     } else {
-        // Parent process
+        // Parent process does not wait for background processes
         if (!background) {
             do {
-                wpid = waitpid(pid, &status, WUNTRACED);
+                waitpid(pid, &status, WUNTRACED);
             } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        } else {
+            printf("[Running in background] PID: %d\n", pid);
+            // Optionally, to ensure the shell doesn't wait for this process:
+            setpgid(pid, pid); // Detach the process group of the background process
         }
+
+        // Close file descriptors in the parent to avoid leaks
+        if (inFD != 0) close(inFD);
+        if (outFD != 1) close(outFD);
     }
 
     return 1;
 }
+
 
 int main(){
     char *line = NULL;              // line read from terminal
@@ -253,10 +313,10 @@ int main(){
     int status;                     // return status of an executed command
 
     while(1){
+        printf("\n>> ");
         line = readLine();
         commandList = splitLine(line, &numOfCommands);
-        printf("\n>> ");
-
+        
         // if a single command is parsed, it means there are
         // no pipes and we can just execute it normally
         if(numOfCommands == 1){
@@ -360,10 +420,10 @@ int main(){
 
 // **********  TESTING ********** 
 // worked: 
-    // cat testfile.txt | wc > newfile.txt 
-    // wc < tempfile.txt | cat & 
-    // wc < tempfile.txt | cat
-    // wc < tempfile.txt | cat | cat > finalfile.txt
+    // cat starterCode.c | wc > newfile.txt 
+    // wc < newfile.txt | cat & 
+    // wc < newfile.txt | cat
+    // wc < newfile.txt | cat | cat > finalfile.txt
 
 // "cmd1 < inputFile.txt | cmd2 | cmd3 arg1 arg2 &"
 
