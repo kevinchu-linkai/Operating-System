@@ -1,0 +1,10 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/mexiporc/Documents/GitHub/Operating-System/Lab6/SJF_NONPreemptive'
+relocations:
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _sortProcessesByArrival, symObjAddr: 0x0, symBinAddr: 0x1000038E4, symSize: 0x150 }
+  - { offsetInCU: 0x41, offset: 0x41, size: 0x8, addend: 0x0, symName: _sortProcessesByArrival, symObjAddr: 0x0, symBinAddr: 0x1000038E4, symSize: 0x150 }
+  - { offsetInCU: 0xC7, offset: 0xC7, size: 0x8, addend: 0x0, symName: _findNextProcess, symObjAddr: 0x150, symBinAddr: 0x100003A34, symSize: 0x108 }
+  - { offsetInCU: 0x143, offset: 0x143, size: 0x8, addend: 0x0, symName: _calculateSJFNonPreemptiveTimes, symObjAddr: 0x258, symBinAddr: 0x100003B3C, symSize: 0x1E8 }
+  - { offsetInCU: 0x1D7, offset: 0x1D7, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x440, symBinAddr: 0x100003D24, symSize: 0x178 }
+...
