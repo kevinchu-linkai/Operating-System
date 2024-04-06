@@ -68,27 +68,28 @@ output:
 char **splitLine(char *line, int *numOfCommands) {
     int bufsize = BUFFER_SIZE; 
     int position = 0; 
-    char **tokens = malloc(bufsize * sizeof(char*)); // Allocate memory for the tokens array
+    char **tokens = malloc(bufsize * sizeof(char*)); // Malloc buffer size * size of char*
     char *token; // Pointer to store each token found by strtok
 
-    // Check if memory allocation for tokens array was successful
+    // Fail check
     if (!tokens) {
         fprintf(stderr, "splitLine: allocation error\n");
         exit(EXIT_FAILURE);
     }
-
-    // Use strtok to find the first token, split by the pipe character
+    // Strtok() to split by pipe character
     token = strtok(line, "|");
+    
+    
     while (token != NULL) { // Continue until no more tokens are found
         tokens[position++] = token; // Assign the token to the current position in the array
 
-        // If we've reached the current buffer size, increase the buffer size
+        // Resize function
         if (position >= bufsize) {
             bufsize += BUFFER_SIZE; 
             tokens = realloc(tokens, bufsize * sizeof(char*)); 
-            // Check if memory reallocation was successful
+            // Fail check
             if (!tokens) {
-                fprintf(stderr, "splitLine: allocation error\n");
+                fprintf(stderr, "splitLine error:\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -137,67 +138,102 @@ output:
 */
 // Parses a single command into tokens, taking into account quoted strings
 // and returns an array of tokens/words found in the command.
+// Parses a single command into tokens, taking into account quoted strings
+// and now also ignores backslashes.
 char **parseCommand(char *command, int *numOfWords) {
-    int bufsize = BUFFER_SIZE; 
-    int position = 0; 
-    char **tokens = malloc(bufsize * sizeof(char*)); 
-    char *token; // Pointer to store the start of each token
-    char *cursor; // Pointer used to iterate through the command string
-    int inSingleQuote = 0, inDoubleQuote = 0; // Flags to track if inside quotes
+    int bufsize = BUFFER_SIZE;
+    int position = 0;
+    char **tokens = malloc(bufsize * sizeof(char*));
+    char *token;
+    char *cursor;
+    int inSingleQuote = 0, inDoubleQuote = 0;
 
-    // Check if memory allocation for tokens array was successful
     if (!tokens) {
         fprintf(stderr, "parseCommand: allocation error\n");
         exit(EXIT_FAILURE);
     }
 
-    cursor = command; // Initialize cursor to the start of the command
-    while (*cursor) { // Iterate through the command until the end of the string
-        // Skip any leading whitespace before a token
+    cursor = command;
+    while (*cursor) {
         while (*cursor && isspace((unsigned char)*cursor)) cursor++;
 
-        if (!*cursor) break; // If reached the end of the string, stop parsing
-
-        // Mark the start of a token
+        if (!*cursor) break;
         token = cursor;
 
-        // Iterate over the characters until the end of the token is found
         while (*cursor) {
-            if (*cursor == '\'' && !inDoubleQuote) { // Handling single quotes
-                inSingleQuote = !inSingleQuote; // Toggle the inSingleQuote flag
-                memmove(cursor, cursor + 1, strlen(cursor)); // Remove the quote from the command
-            } else if (*cursor == '\"' && !inSingleQuote) { // Handling double quotes
-                inDoubleQuote = !inDoubleQuote; // Toggle the inDoubleQuote flag
-                memmove(cursor, cursor + 1, strlen(cursor)); // Remove the quote from the command
+            if (*cursor == '\\' && !(inSingleQuote || inDoubleQuote)) {
+                // If we encounter a backslash outside quotes, skip it and move to the next character.
+                cursor++;
+                continue;
+            } else if (*cursor == '\\' && (inSingleQuote || inDoubleQuote))
+            {
+                // If we encounter a backslash inside quotes,interpret the special characters.
+                if (*(cursor + 1) == 'n') {
+                    *cursor = '\n';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == 't') {
+                    *cursor = '\t';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == 'v') {
+                    *cursor = '\v';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == 'b') {
+                    *cursor = '\b';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == 'r') {
+                    *cursor = '\r';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == 'f') {
+                    *cursor = '\f';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == 'a') {
+                    *cursor = '\a';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == '0') {
+                    *cursor = '\0';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else if (*(cursor + 1) == '\\') {
+                    *cursor = '\\';
+                    memmove(cursor + 1, cursor + 2, strlen(cursor + 2) + 1);
+                } else {
+                    memmove(cursor, cursor + 1, strlen(cursor));
+                }
+            } 
+            
+            if (*cursor == '\'' && !inDoubleQuote) {
+                inSingleQuote = !inSingleQuote;
+                memmove(cursor, cursor + 1, strlen(cursor));
+            } else if (*cursor == '\"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+                memmove(cursor, cursor + 1, strlen(cursor));
             } else if (isspace((unsigned char)*cursor) && !inSingleQuote && !inDoubleQuote) {
-                break; // End of the token if whitespace is found outside quotes
+                break;
             } else {
-                cursor++; // Move to the next character
+                cursor++;
             }
         }
 
-        // Check if the tokens array needs to be resized
         if (position >= bufsize) {
-            bufsize += BUFFER_SIZE; 
-            tokens = realloc(tokens, bufsize * sizeof(char*)); 
+            bufsize += BUFFER_SIZE;
+            tokens = realloc(tokens, bufsize * sizeof(char*));
             if (!tokens) {
-                fprintf(stderr, "parseCommand: allocation error\n");
+                fprintf(stderr, "parseCommand error: \n");
                 exit(EXIT_FAILURE);
             }
         }
 
-        // Assign the token to the current position in the array and increment the position
         tokens[position++] = token;
         if (*cursor) {
-            *cursor = '\0'; // Null-terminate the token
-            cursor++; // Move past the end of the current token
+            *cursor = '\0';
+            cursor++;
         }
     }
 
-    tokens[position] = NULL; 
-    *numOfWords = position; 
-    return tokens; 
+    tokens[position] = NULL;
+    *numOfWords = position;
+    return tokens;
 }
+
 
 
 
@@ -209,48 +245,44 @@ char **parseCommand(char *command, int *numOfWords) {
 // responsible for handling redirects and the handling of background processes
 int shellExecute(char *tokens[], int numOfTokens, int inFD, int outFD) {
     pid_t pid;
-    int status;
-    int background = 0;
-    int inputRedirected = 0, outputRedirected = 0;
+    int status; // status of the shell execute (if 1, success)
+    int background = 0; // Background flag
+    int inputRedirected = 0, outputRedirected = 0; // Redirection Fladgs
 
-    // Parse tokens for redirections and background flag
+    // Parse tokens
     for (int i = 0; i < numOfTokens; i++) {
         if (strcmp(tokens[i], "<") == 0) {
             inputRedirected = 1;
-            char filepath[BUFFER_SIZE]; // Define a buffer to hold the filepath
-            sprintf(filepath, "./%s", tokens[i + 1]); // Prepend "./" to the filename
-            inFD = open(filepath, O_RDONLY);
+            inFD = open(tokens[i + 1], O_RDONLY);
             if (inFD < 0) {
                 perror("Failed to open input file");
                 return -1;
             }
-            tokens[i] = NULL; // Remove redirection from command
-            i++; // Skip filename
+            tokens[i] = NULL; // Remove char
+            i++; // Skip filename (it will be parsed later).
         } else if (strcmp(tokens[i], ">") == 0) {
             outputRedirected = 1;
-            char filepath[BUFFER_SIZE]; // Define a buffer to hold the filepath
-            sprintf(filepath, "./%s", tokens[i + 1]); // Prepend "./" to the filename
-            outFD = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);  
+            outFD = open(tokens[i+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);  
             if (outFD < 0) {
                 perror("Failed to open output file");
                 return -1;
             }
-            tokens[i] = NULL; // Remove redirection from command
-            i++; // Skip filename
+            tokens[i] = NULL; //Remove char
+            i++; // Skip filename (it will be parsed later).
         } else if (strcmp(tokens[i], "&") == 0) {
             background = 1;
             tokens[i] = NULL; // Remove background symbol from command
         }
     }
 
-    pid = fork();
+    pid = fork(); // Fork initiate
     if (pid == 0) { // Child process
-        // Redirect input if necessary
+        // Redirect input
         if (inFD != STDIN_FILENO) {
             dup2(inFD, STDIN_FILENO);
             close(inFD);
         }
-        // Redirect output if necessary
+        // Redirect output
         if (outFD != STDOUT_FILENO) {
             dup2(outFD, STDOUT_FILENO);
             close(outFD);
@@ -260,35 +292,27 @@ int shellExecute(char *tokens[], int numOfTokens, int inFD, int outFD) {
         if (inFD != 0) close(inFD);
         // Close the write end of the pipe if it's not STDOUT
         if (outFD != 1) close(outFD);
-
-        // Prepend /bin/ to the command if it doesn't already specify a path
-        if (tokens[0][0] != '/') {
-            char cmdpath[BUFFER_SIZE]; // Define a buffer to hold the filepath
-            sprintf(cmdpath, "/bin/%s", tokens[0]); // Prepend "./" to the filename
-            tokens[0] = cmdpath; // Point the first token to the full command path
-        }
-
+        
         if (execvp(tokens[0], tokens) == -1) {
-            perror("execvp error");
+            perror("Execvp Error: ");
             exit(EXIT_FAILURE);
         }
     } else if (pid < 0) {
-        // Error forking
-        perror("fork error");
+        //Fail check
+        perror("Fork error");
         return -1;
     } else {
-        // Parent process does not wait for background processes
+        // NOTE*: Parent process does not wait for background processes
         if (!background) {
             do {
                 waitpid(pid, &status, WUNTRACED);
             } while (!WIFEXITED(status) && !WIFSIGNALED(status));
         } else {
-            printf("[Running in background] PID: %d\n", pid);
-            // Optionally, to ensure the shell doesn't wait for this process:
-            setpgid(pid, pid); // Detach the process group of the background process
+            // Ensure the shell doesn't wait for this process:
+            setpgid(pid, pid); // Detach the process group of the background process.
         }
 
-        // Close file descriptors in the parent to avoid leaks
+        // Close in and out FD
         if (inFD != 0) close(inFD);
         if (outFD != 1) close(outFD);
     }
@@ -362,13 +386,13 @@ int main(){
         // then we have to construct and allocate the pipes
         // such that we can establish interprocess communication (IPC) 
         else if(numOfCommands > 1){
-            int inFD = 0; // Initially, input is from stdin
+            int inFD = 0; 
             for (int i = 0; i < numOfCommands; i++) {
                 int fd[2];
-                // Create a pipe for all but the last command
-                if (i < numOfCommands - 1) {
+                if (i < numOfCommands - 1) { // Pipes = commands-1 (1 pipe for 2 commands, 2 for 3 etc..)
                     if (pipe(fd) != 0) {
-                        perror("Pipe failed");
+                        // Fail check
+                        perror("Pipe Failure");
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -382,16 +406,14 @@ int main(){
                 } else {
                     // For other commands, output to the pipe
                     shellExecute(tokens, numOfTokens, inFD, fd[1]);
-                    close(fd[1]); // Close the write-end of the pipe after use
+                    close(fd[1]); // We do not need the input anymore, close.
                 }
 
-                // The next command should read from the current pipe
                 if (inFD != STDIN_FILENO) {
-                    close(inFD); // Close the previous read-end of the pipe
+                    close(inFD); // Close the previous read of the pipe.
                 }
-                inFD = fd[0]; // For the next command, read from the current pipe
-
-                // Clean up
+                inFD = fd[0]; // Read from pipe.
+                // Free tokens just in case.
                 free(tokens);
             }
         }
@@ -422,7 +444,7 @@ int main(){
 
 // **********  TESTING ********** 
 // worked: 
-    // cat starterCode.c | wc > newfile.txt 
+    // cat ExtendedShell.c | wc > newfile.txt 
     // wc < newfile.txt | cat & 
     // wc < newfile.txt | cat
     // wc < newfile.txt | cat | cat > finalfile.txt
@@ -434,10 +456,10 @@ int main(){
 
 // cat 
     // on its own 
-    // cat testfile.txt | wc 
+    // cat finalfile.txt | wc 
     // cat tempfile.txt | wc > FILEOUT &
 
-// wc < tempfile.txt | cat | cat > finalFILE_new
+// wc < finalfile.txt | cat | cat > finalFILE_new
 
 // TESTING FOR ALL TYPES OF EDGE CASES // 
 
@@ -493,7 +515,7 @@ int main(){
 
 
 // Redirection (<, >):
-    // wc < input.txt
+    // wc < filelist.txt
     // ls > filelist.txt
-    // sort < input.txt > output.txt
-    // cat < input.txt | grep "keyword"
+    // sort < filelist.txt > output.txt
+    // cat < filelist.txt | grep "keyword"

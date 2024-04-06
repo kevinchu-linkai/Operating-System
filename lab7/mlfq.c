@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #define MAX_PROCESSES 100
 
@@ -168,27 +169,88 @@ void executeMLFQ() {
                 if (processList[i].remainingTime > 0 && processList[i].priority == 2) {
                     int executionTime = (processList[i].remainingTime < Q2_quantum) ? processList[i].remainingTime : Q2_quantum;
                     if (currentTime >= processList[i].arrivalTime) {
-                        if(currentTime + executionTime > lastBoostTime + boostInterval) {
+                        int interrupt_execution = 0;
+                        int boost_execution = 0;
+                        if(currentTime + processList[i].remainingTime > lastBoostTime + boostInterval) {
+                            printf("boosted");
+                            executionTime = lastBoostTime + boostInterval - currentTime;
+                            boost_execution = executionTime;
                             processList[i].priority = 1;
                             processList[i].boostTime++;
+                        }
+                        for (int j = 0; j < processCount; j++)
+                        {
+                            int min_arrival = INT_MAX;
+                            if(processList[j].priority == 1 && processList[j].arrivalTime <= currentTime + executionTime && processList[j].arrivalTime > currentTime && processList[j].remainingTime > 0)
+                            {   
+                                if (processList[j].arrivalTime < min_arrival)
+                                {
+                                    min_arrival = processList[j].arrivalTime;
+                                }                   
+                                executionTime = processList[j].arrivalTime - currentTime;
+                                if (processList[i].id == 4)
+                                {
+                                    printf("Execution time: %d\n", executionTime);
+                                }
+                                interrupt_execution = executionTime;
+                            }
+                        }
+                        if (boost_execution > 0 && interrupt_execution > 0)
+                        {
+                            if (boost_execution < interrupt_execution)
+                            {
+                                currentTime += boost_execution;
+                                processList[i].remainingTime -= boost_execution;
+                                if (processList[i].remainingTime <= 0)
+                                {
+                                    processExecuted++;
+                                    processList[i].completionTime = currentTime;
+                                    processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
+                                    executedThisCycle = 1;
+                                    printSchedulerState(currentTime);
+                                    break; // Execute one process at a time
+                                }
+                                executedThisCycle = 1;
+                                sortProcessList();
+                                printSchedulerState(currentTime);
+                                break; // Execute one process at a time
+                            }
+                            else
+                            {
+                                currentTime += interrupt_execution;
+                                processList[i].remainingTime -= interrupt_execution;
+                                if (processList[i].remainingTime <= 0)
+                                {
+                                    processExecuted++;
+                                    processList[i].completionTime = currentTime;
+                                    processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
+                                    executedThisCycle = 1;
+                                    printSchedulerState(currentTime);
+                                    break; // Execute one process at a time
+                                }
+                                processList[i].priority = 2;
+                                processList[i].boostTime--;
+                                executedThisCycle = 1;
+                                sortProcessList();
+                                printSchedulerState(currentTime);
+                                break; // Execute one process at a time
+                            }
+                        }
+                        
+                        currentTime += executionTime;
+                        processList[i].remainingTime -= executionTime;
+                        if (processList[i].remainingTime <= 0)
+                        {
+                            processExecuted++;
+                            processList[i].completionTime = currentTime;
+                            processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
                             executedThisCycle = 1;
-                            sortProcessList();
                             printSchedulerState(currentTime);
                             break; // Execute one process at a time
                         }
-                        processList[i].remainingTime -= executionTime;
-                        currentTime += executionTime;
-
-                        if (processList[i].remainingTime <= 0) {
-                            processList[i].completionTime = currentTime;
-                            processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
-                            processExecuted++;
-                        } else {
-                            // Keep in the same queue or move to Q3 based on your policy
-                            processList[i].priority = 3;
-                        }
-
+                        processList[i].priority = 3;
                         executedThisCycle = 1;
+                        sortProcessList();
                         printSchedulerState(currentTime);
                         break; // Execute one process at a time
                     }
@@ -201,26 +263,91 @@ void executeMLFQ() {
             for (int i = 0; i < processCount; i++) {
                 if (processList[i].remainingTime > 0 && processList[i].priority == 3) {
                     if (currentTime >= processList[i].arrivalTime) {
+                        int executionTime = processList[i].remainingTime;
+                        int interrupt_execution = 0;
+                        int boost_execution = 0;
                         if(currentTime + processList[i].remainingTime > lastBoostTime + boostInterval) {
-                            int executionTime = lastBoostTime + boostInterval - currentTime;
-                            processList[i].remainingTime -= executionTime;
-                            currentTime += executionTime;
+                            executionTime = lastBoostTime + boostInterval - currentTime;
+                            boost_execution = executionTime;
                             processList[i].priority = 1;
                             processList[i].boostTime++;
+                        }
+                        for (int j = 0; j < processCount; j++)
+                        {
+                            int min_arrival = INT_MAX;
+                            if(processList[j].priority == 1 && processList[j].arrivalTime <= currentTime + executionTime && processList[j].arrivalTime > currentTime && processList[j].remainingTime > 0)
+                            {   
+                                if (processList[j].arrivalTime < min_arrival)
+                                {
+                                    min_arrival = processList[j].arrivalTime;
+                                }                   
+                                executionTime = processList[j].arrivalTime - currentTime;
+                                if (processList[i].id == 4)
+                                {
+                                    printf("Execution time: %d\n", executionTime);
+                                }
+                                interrupt_execution = executionTime;
+                            }
+                        }
+                        if (boost_execution > 0 && interrupt_execution > 0)
+                        {
+                            if (boost_execution < interrupt_execution)
+                            {
+                                currentTime += boost_execution;
+                                processList[i].remainingTime -= boost_execution;
+                                if (processList[i].remainingTime <= 0)
+                                {
+                                    processExecuted++;
+                                    processList[i].completionTime = currentTime;
+                                    processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
+                                    executedThisCycle = 1;
+                                    printSchedulerState(currentTime);
+                                    break; // Execute one process at a time
+                                }
+                                executedThisCycle = 1;
+                                sortProcessList();
+                                printSchedulerState(currentTime);
+                                break; // Execute one process at a time
+                            }
+                            else
+                            {
+                                currentTime += interrupt_execution;
+                                processList[i].remainingTime -= interrupt_execution;
+                                if (processList[i].remainingTime <= 0)
+                                {
+                                    processExecuted++;
+                                    processList[i].completionTime = currentTime;
+                                    processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
+                                    executedThisCycle = 1;
+                                    printSchedulerState(currentTime);
+                                    break; // Execute one process at a time
+                                }
+                                processList[i].priority = 3;
+                                processList[i].boostTime--;
+                                executedThisCycle = 1;
+                                sortProcessList();
+                                printSchedulerState(currentTime);
+                                break; // Execute one process at a time
+                            }
+                        }
+                        
+                        currentTime += executionTime;
+                        processList[i].remainingTime -= executionTime;
+                        if (processList[i].remainingTime <= 0)
+                        {
+                            processExecuted++;
+                            processList[i].completionTime = currentTime;
+                            processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
                             executedThisCycle = 1;
-                            sortProcessList();
                             printSchedulerState(currentTime);
                             break; // Execute one process at a time
                         }
-                        currentTime += processList[i].remainingTime;
-                        processList[i].completionTime = currentTime;
-                        processList[i].turnaroundTime = processList[i].completionTime - processList[i].arrivalTime;
-                        processList[i].remainingTime = 0;
-                        processExecuted++;
-
                         executedThisCycle = 1;
+                        sortProcessList();
                         printSchedulerState(currentTime);
                         break; // Execute one process at a time
+
+ 
                     }
                 }
             }
