@@ -1,0 +1,312 @@
+## random seed '1' to run a little lottery 100 different times.
+## initial jobs, each with some number of tickets
+    insert(70);
+    insert(90);
+    insert(35);
+
+-----------------------------------------------------------------------
+COMPILATION:    
+
+fz2335@Zeesh lab8 % gcc -o lottery_schedular lottery_schedular.c -Wall
+fz2335@Zeesh lab8 % ./lottery 1 100  
+                 
+List: [35] [90] [70] 
+List: [35] [90] [70] 
+winner: 13 35
+
+List: [35] [90] [70] 
+winner: 61 90
+
+List: [35] [90] [70] 
+winner: 102 90
+
+List: [35] [90] [70] 
+winner: 160 70
+
+List: [35] [90] [70] 
+winner: 53 90
+
+List: [35] [90] [70] 
+winner: 40 90
+
+List: [35] [90] [70] 
+winner: 181 70
+
+List: [35] [90] [70] 
+winner: 42 90
+
+List: [35] [90] [70] 
+winner: 144 70
+
+List: [35] [90] [70] 
+winner: 46 90
+
+List: [35] [90] [70] 
+winner: 2 35
+
+List: [35] [90] [70] 
+winner: 172 70
+
+List: [35] [90] [70] 
+winner: 65 90
+
+List: [35] [90] [70] 
+winner: 4 35
+
+List: [35] [90] [70] 
+winner: 38 90
+
+List: [35] [90] [70] 
+winner: 1 35
+
+List: [35] [90] [70] 
+winner: 165 70
+
+List: [35] [90] [70] 
+winner: 36 90
+
+List: [35] [90] [70] 
+winner: 127 70
+
+List: [35] [90] [70] 
+winner: 76 90
+
+List: [35] [90] [70] 
+winner: 176 70
+
+List: [35] [90] [70] 
+winner: 8 35
+
+List: [35] [90] [70] 
+winner: 42 90
+
+List: [35] [90] [70] 
+winner: 159 70
+
+List: [35] [90] [70] 
+winner: 107 90
+
+List: [35] [90] [70] 
+winner: 5 35
+
+List: [35] [90] [70] 
+winner: 2 35
+
+List: [35] [90] [70] 
+winner: 133 70
+
+List: [35] [90] [70] 
+winner: 127 70
+
+List: [35] [90] [70] 
+winner: 160 70
+
+List: [35] [90] [70] 
+winner: 74 90
+
+List: [35] [90] [70] 
+winner: 12 35
+
+List: [35] [90] [70] 
+winner: 27 35
+
+List: [35] [90] [70] 
+winner: 48 90
+
+List: [35] [90] [70] 
+winner: 44 90
+
+List: [35] [90] [70] 
+winner: 147 70
+
+List: [35] [90] [70] 
+winner: 88 90
+
+List: [35] [90] [70] 
+winner: 31 35
+
+List: [35] [90] [70] 
+winner: 61 90
+
+List: [35] [90] [70] 
+winner: 37 90
+
+List: [35] [90] [70] 
+winner: 144 70
+
+List: [35] [90] [70] 
+winner: 63 90
+
+List: [35] [90] [70] 
+winner: 81 90
+
+List: [35] [90] [70] 
+winner: 14 35
+
+List: [35] [90] [70] 
+winner: 134 70
+
+List: [35] [90] [70] 
+winner: 187 70
+
+List: [35] [90] [70] 
+winner: 83 90
+
+List: [35] [90] [70] 
+winner: 104 90
+
+List: [35] [90] [70] 
+winner: 95 90
+
+List: [35] [90] [70] 
+winner: 15 35
+
+List: [35] [90] [70] 
+winner: 53 90
+
+List: [35] [90] [70] 
+winner: 76 90
+
+List: [35] [90] [70] 
+winner: 91 90
+
+List: [35] [90] [70] 
+winner: 95 90
+
+List: [35] [90] [70] 
+winner: 41 90
+
+List: [35] [90] [70] 
+winner: 3 35
+
+List: [35] [90] [70] 
+winner: 167 70
+
+List: [35] [90] [70] 
+winner: 110 90
+
+List: [35] [90] [70] 
+winner: 136 70
+
+List: [35] [90] [70] 
+winner: 166 70
+
+List: [35] [90] [70] 
+winner: 75 90
+
+List: [35] [90] [70] 
+winner: 15 35
+
+List: [35] [90] [70] 
+winner: 179 70
+
+List: [35] [90] [70] 
+winner: 102 90
+
+List: [35] [90] [70] 
+winner: 131 70
+
+List: [35] [90] [70] 
+winner: 95 90
+
+List: [35] [90] [70] 
+winner: 121 90
+
+List: [35] [90] [70] 
+winner: 24 35
+
+List: [35] [90] [70] 
+winner: 193 70
+
+List: [35] [90] [70] 
+winner: 182 70
+
+List: [35] [90] [70] 
+winner: 129 70
+
+List: [35] [90] [70] 
+winner: 15 35
+
+List: [35] [90] [70] 
+winner: 117 90
+
+List: [35] [90] [70] 
+winner: 15 35
+
+List: [35] [90] [70] 
+winner: 29 35
+
+List: [35] [90] [70] 
+winner: 57 90
+
+List: [35] [90] [70] 
+winner: 74 90
+
+List: [35] [90] [70] 
+winner: 179 70
+
+List: [35] [90] [70] 
+winner: 33 35
+
+List: [35] [90] [70] 
+winner: 170 70
+
+List: [35] [90] [70] 
+winner: 67 90
+
+List: [35] [90] [70] 
+winner: 153 70
+
+List: [35] [90] [70] 
+winner: 51 90
+
+List: [35] [90] [70] 
+winner: 158 70
+
+List: [35] [90] [70] 
+winner: 53 90
+
+List: [35] [90] [70] 
+winner: 159 70
+
+List: [35] [90] [70] 
+winner: 33 35
+
+List: [35] [90] [70] 
+winner: 26 35
+
+List: [35] [90] [70] 
+winner: 74 90
+
+List: [35] [90] [70] 
+winner: 169 70
+
+List: [35] [90] [70] 
+winner: 192 70
+
+List: [35] [90] [70] 
+winner: 150 70
+
+List: [35] [90] [70] 
+winner: 56 90
+
+List: [35] [90] [70] 
+winner: 48 90
+
+List: [35] [90] [70] 
+winner: 124 90
+
+List: [35] [90] [70] 
+winner: 187 70
+
+List: [35] [90] [70] 
+winner: 16 35
+
+List: [35] [90] [70] 
+winner: 51 90
+
+List: [35] [90] [70] 
+winner: 84 90
+
+List: [35] [90] [70] 
+winner: 14 35
