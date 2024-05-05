@@ -28,6 +28,8 @@ void remove_job(struct node_t *prev, struct node_t *to_remove) {
     free(to_remove);  // Free the memory allocated to the node
 }
 
+
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "usage: lottery <seed> <loops>\n");
@@ -38,17 +40,42 @@ int main(int argc, char *argv[]) {
     int loops = atoi(argv[2]);
     srandom(seed);
 
-    insert(70);
-    insert(90);
-    insert(35);
+    insert(50);
+    insert(10);
+    insert(110);
     print_list();
+    int* ticket_pool = (int*) malloc(sizeof(int) * gtickets);
+    // add all tickets to the ticket pool
+    int ticket_pool_index = 0;
+    struct node_t *current = head;
+    while (current != NULL) {
+        for (int j = 0; j < current->tickets; j++) {
+            ticket_pool[ticket_pool_index] = 1;
+            ticket_pool_index++;
+        }
+        current = current->next;
+    }
+
+
 
     for (int i = 0; i < loops; i++) {
+        
         if (gtickets == 0) {
             printf("All tickets have been exhausted.\n");
             break;
         }
         int winner_ticket = random() % gtickets;
+        int original_winner_ticket = winner_ticket; // Store the original winning ticket to detect loops.
+        // check if the winner ticket has been selected before
+        while (ticket_pool[winner_ticket] == 0) {
+            winner_ticket = (winner_ticket + 1) % gtickets;
+            if (winner_ticket == original_winner_ticket) {
+                printf("All available tickets have been used.\n");
+                break; // Break out of the loop to avoid infinite cycling.
+            }
+        }
+        ticket_pool[winner_ticket] = 0; // Mark this ticket as used.
+
         int cumulative_tickets = 0;
         struct node_t *current = head, *prev = NULL;
 
@@ -67,7 +94,9 @@ int main(int argc, char *argv[]) {
             current = current->next;
         }
         print_list();
+        printf("Total tickets: %d\n", gtickets);
     }
+    free(ticket_pool);
     return 0;
 }
 

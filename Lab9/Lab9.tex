@@ -1,0 +1,56 @@
+\documentclass{article}
+
+\begin{document}
+
+\title{Operating Systems Lab 9}
+\author{Your Name}
+\date{\today}
+
+\maketitle
+
+\section{Question 1}
+(a) How Peterson’s Lock Preserves Mutual Exclusion
+Peterson’s lock mechanism ensures mutual exclusion using two primary variables: an array flag[] where each index represents whether a thread intends to enter the critical section, and a variable turn which indicates whose turn it is to enter the critical section. Here’s how it preserves mutual exclusion:\newline
+
+Each thread sets its respective flag[self] to 1 to indicate its intention to enter the critical section.
+It then assigns turn to the other thread (i.e., turn = 1 - self), effectively saying "I am ready, but now it's your turn".
+The thread then enters a spin-wait loop, where it will wait as long as both conditions are true: the other thread also wants to enter the critical section (flag[1-self] == 1), and it’s the other thread’s turn (turn == 1-self).
+Mutual exclusion is preserved because a thread can only enter the critical section if it is its turn, and the other thread does not intend to enter the critical section. This setup ensures that at most one thread can enter the critical section at any given time.\newline\newline
+(b) Proof of Bounded Waiting in Peterson's Algorithm
+Bounded waiting is ensured in Peterson’s algorithm by the use of the turn variable. Here’s the proof:\newline
+
+When a thread sets flag[self] = 1, it indicates its desire to enter the critical section and hands over the turn to the other thread (turn = 1 - self).
+If the other thread is not interested in entering the critical section (flag[1-self] = 0), the waiting thread will immediately exit the spin-wait and enter the critical section.
+If the other thread is also interested (flag[1-self] = 1), then the turn variable plays a crucial role. The waiting thread can enter the critical section only when turn comes back to self, ensuring that the other thread cannot continuously monopolize the critical section without giving turn back to the waiting thread.
+This mechanism ensures there is a limit to the number of times the other thread can enter the critical section before the waiting thread gets its turn, hence proving bounded waiting.\newline\newline
+(c) Why Peterson’s Solution Does Not Work on Modern Computers
+Peterson's solution relies on the sequential execution of load and store operations as per program order. However, modern processors and compilers may reorder instructions for optimization and efficiency (out-of-order execution), especially when there are no explicit dependencies between them. Such reordering can break the assumptions made in Peterson’s algorithm about the order of execution of the flag[] and turn assignments and checks. For instance, the assignment to turn might be reordered after the beginning of the spin-wait loop, leading to both threads entering the critical section. Memory barrier instructions are necessary to prevent such reordering, but Peterson's algorithm does not include them.
+
+\section{Question 2}
+% Answer to question 2
+Busy Waiting: Busy waiting occurs when a process repeatedly checks for a condition (such as a lock release) without relinquishing CPU control, thereby consuming CPU cycles without doing any productive work.\newline
+
+Other Kinds of Waiting:\newline
+
+Blocking/Sleeping Wait: Instead of consuming CPU resources, the process is suspended and placed in a waiting queue until the condition is met.
+I/O Waiting: A process waits for an I/O operation to complete.
+Busy waiting can sometimes be avoided by using blocking or sleeping mechanisms, where the thread or process is put to sleep and only wakes up when it can proceed, thereby saving CPU cycles. However, for very short wait times, the overhead of context switching associated with blocking might make busy waiting more efficient.
+\section{Question 3}
+% Answer to question 3
+
+\section{Question 4}
+% Answer to question 4
+
+\section{Question 5}
+% Answer to question 5
+
+\section{Question 6}
+% Answer to question 6
+
+\section{Question 7}
+% Answer to question 7
+
+\section{Question 8}
+% Answer to question 8
+
+\end{document}
